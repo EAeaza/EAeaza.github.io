@@ -51,6 +51,12 @@
 <ul><li><strong>Journal checked against history.</strong> A test requires every commit the work journal cites to exist, with a matching title.</li><li><strong>CI:</strong> ruff, pytest, an import check for every evaluation module, and ESLint, type check and build for the Mini App.</li></ul>
 <h2 id="stack">Stack</h2>
 <p>Python 3.11 · OpenCV · NumPy / SciPy · scikit-learn · PyTorch (fallback detector, optional EasyOCR and RapidOCR) · FastAPI · SQLite · React 19 · Vite · TypeScript · Tailwind · Telegram Mini App · Cloudflare tunnel · GitHub Actions. In evaluation only: DINOv2, CLIP, SigLIP, YOLO-World, SAM 2, Tesseract, docTR, local vision models via Ollama, and hosted vision-model APIs.</p>
+<h2 id="screenshots">Screenshots</h2>
+<p><em>The real code running on synthetic data. No client data appears anywhere.</em></p>
+<p><img src="demo/01-contact-sheet.png" alt="The pipeline's own HTML contact sheet after an offline run on a synthetic 140-second night video with invented ads: six ad slots found, each repeat grouped with its timecodes, and the brand field left empty for a person to confirm (the UI is in Russian, and OCR is off by default)." loading="lazy"></p>
+<p><em>The pipeline's own HTML contact sheet after an offline run on a synthetic 140-second night video with invented ads: six ad slots found, each repeat grouped with its timecodes, and the brand field left empty for a person to confirm (the UI is in Russian, and OCR is off by default).</em></p>
+<p><img src="demo/02-panel-and-similarity-matrix.png" alt="Two images the pipeline wrote from the same synthetic video: on the left, the LED panel found by the classic OpenCV detector and outlined in green; on the right, the frame-by-frame self-similarity matrix, whose repeating block pattern reveals the 68-second playlist loop." loading="lazy"></p>
+<p><em>Two images the pipeline wrote from the same synthetic video: on the left, the LED panel found by the classic OpenCV detector and outlined in green; on the right, the frame-by-frame self-similarity matrix, whose repeating block pattern reveals the 68-second playlist loop.</em></p>
 <h2 id="access">Access</h2>
 <p>The code is private. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
 <p class="repo"><a href="https://github.com/EAeaza/reklama-radar">This page on GitHub &rarr;</a></p>
