@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marketplace Control Tower — Azamat Egamberdiev</title>
+<meta name="description" content="Reconciles marketplace, tax, bank and 1C data on one barcode spine; forecasts demand; answers questions over read-only SQL.">
+<link rel="stylesheet" href="../style.css">
+</head><body>
+<header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
+<nav><a href="../#work">Work</a><a href="https://github.com/EAeaza">GitHub</a><a href="mailto:eazamat360@gmail.com">Contact</a></nav></header>
+<main class="project">
+<p class="back"><a href="../">&larr; All work</a></p>
+<article class="doc">
+<h1 id="marketplace-control-tower">Marketplace Control Tower</h1>
+<p>One system that pulls every source a distributor's business depends on into one database, reconciles the sources against each other, and turns them into decisions its owner can check.</p>
+<p><strong>since Jun 2026, active · 709 commits · Python · SQLite · code: private</strong></p>
+<h2 id="the-problem">The problem</h2>
+<p>A cosmetics distributor in Uzbekistan sells through three marketplaces, wholesale buyers and retail chains. It keeps its books in 1C, stores goods at a third-party warehouse, and every sale also shows up as a fiscal receipt filed with the tax authority and as a national e-invoice. That makes five or six systems describing the same transaction, and they disagree: documents get mirrored, cancelled and reissued, fees are withheld or invoiced separately, and codes that look like product IDs aren't unique.</p>
+<p>Before this system, reconciling them, forecasting demand and planning imports with long lead times meant spreadsheets and manual cross-checking. A wrong total looked exactly as convincing as a right one.</p>
+<h2 id="what-it-does">What it does</h2>
+<ul><li><strong>Collects everything unattended</strong>, three times a day: marketplace APIs, the warehouse portal, fiscal receipts, e-invoices, bank payments, mail and 1C exports. Every source reports its own health.</li><li><strong>Reconciles money</strong> across settlement reports, fiscal receipts, bank and ledger, per product and period, with evidence. A missing source shows as "no data", never as zero.</li><li><strong>Forecasts demand</strong> per product and channel from receipts and e-invoices, not marketplace estimates.</li><li><strong>Plans procurement</strong> against lead time, carton sizes, minimum orders and shelf life, which differs by channel.</li><li><strong>Tracks receivables, OPEX, margin, credit risk and a 13-week cashflow</strong> in owner reports with a freshness line on every sheet.</li><li><strong>Answers questions in plain language</strong> over Telegram or a web chat, using read-only SQL, with every number tagged by source and period.</li><li><strong>Recommends, never acts</strong>: procurement lines are firm, need review, or are blocked. The owner decides.</li></ul>
+<h2 id="how-it-works">How it works</h2>
+<pre class="mermaid">flowchart LR
+  subgraph Sources
+    MP[&quot;Marketplaces A/B/C&quot;]
+    FR[&quot;Fiscal receipts&quot;]
+    EI[&quot;E-invoices&quot;]
+    BK[&quot;Bank&quot;]
+    WH[&quot;3PL warehouse&quot;]
+    OC[&quot;1C exports&quot;]
+  end
+  Sources --&gt; COL[&quot;Collectors + source health&quot;]
+  COL --&gt; DB[(&quot;SQLite · barcode spine&quot;)]
+  DB --&gt; ENG[&quot;Engines: demand, procurement, allocation, A/R, OPEX, cash&quot;]
+  DB --&gt; DQ[&quot;Data-quality rules + events&quot;]
+  ENG --&gt; OUT[&quot;Owner sheets + dashboards&quot;]
+  DQ --&gt; DIG[&quot;Daily digest + alerts&quot;]
+  DB --&gt; ASK[&quot;Ask-me bot&quot;]</pre>
+<pre class="mermaid">flowchart TD
+  Q[&quot;Question&quot;] --&gt; R[&quot;Domain router&quot;]
+  R --&gt; T[&quot;Domain tools + ready metric&quot;]
+  T --&gt; L[&quot;LLM tool loop&quot;]
+  L --&gt; G[&quot;SQL guard · 4 layers&quot;]
+  G --&gt; RO[(&quot;Read-only DB&quot;)]
+  RO --&gt; P[&quot;Provenance + staleness check&quot;]
+  P --&gt; A[&quot;Answer or file&quot;]</pre>
+<p>Layers talk through the database schema, not Python imports. A table-ownership registry says who may write each table. Tables rebuilt from the network go through staging and an atomic swap, so a failed fetch never leaves a half-empty table.</p>
+<h2 id="engineering-notes">Engineering notes</h2>
+<ul><li><strong>Barcode is the only product key.</strong> The national product-type code looks like a key, but dozens of products share one. Records without a barcode are resolved by name and stay flagged as unresolved if the match isn't certain.</li><li><strong>Unknown is not zero.</strong> A missing cost parameter, carton size or payment term stays unknown and is labelled that way downstream, so it never turns into a plausible but invented number.</li><li><strong>Snapshots and registers are different things.</strong> Most tables are append-only snapshots (read the latest one), but in-transit invoices are a register (read all open rows). Mixing the two up caused real bugs, and each case is now pinned by a named invariant and a regression test.</li><li><strong>Guards refuse to publish broken numbers.</strong> If total demand or stock inputs collapse against the previous run, the procurement step fails and the last valid plan stays on display.</li><li><strong>Model choice by backtest.</strong> A walk-forward harness compared forecast variants on history. Exponential smoothing replaced the old method for one marketplace channel (cumulative 3-month WAPE 0.42 → 0.37 on the top class). Wholesale kept a robust median, because no variant beat it.</li><li><strong>An LLM that cannot write.</strong> SQL runs through four independent layers: a read-only connection, a statement authorizer that allows only reads, validation, and a runtime deadline. File contents sent to the bot are wrapped as data, not instructions. The layer that drafts external actions runs dry-run only and cannot be imported by the question-answering stack.</li><li><strong>Built with coding agents on purpose.</strong> 807 Claude Code and Codex sessions. The human work was specifying invariants and auditing the results, recorded in a 200+ entry decision log.</li></ul>
+<h2 id="how-it-is-verified">How it is verified</h2>
+<ul><li><strong>One-command gate</strong>: compile, lint, two test runners, 4,000+ tests and a coverage floor (73.7 % branch coverage at the last baseline).</li><li><strong>Full-cycle regression</strong>: every engine runs on a copy of the live database, and key metrics are diffed against their history. Any shift over 2 % must be explained.</li><li><strong>Golden questions for the bot</strong>: a contract suite runs on a fixture database with planted stale-snapshot traps. A nightly judge checks live answers against canonical metrics for the named period, with a separate LLM review and a check on attached files.</li><li><strong>Independent adversarial audits</strong> by read-only agents, working from written charters. Findings are verified before anything is fixed.</li><li><strong>Refactoring baselines</strong>: the offline engine chain went from 19 s to 1 s with a zero metric diff.</li></ul>
+<h2 id="stack">Stack</h2>
+<p>Python 3.14, SQLite (WAL), pandas, openpyxl, pdfplumber, Playwright, stdlib <code>http.server</code> dashboards, Google Sheets API, Telegram Bot API, OpenAI and Anthropic model APIs, 1C, Didox e-invoicing, the national e-signature client, Windows Task Scheduler, PowerShell, pytest/unittest, ruff.</p>
+<h2 id="screenshots">Screenshots</h2>
+<p><em>The real code running on synthetic data. No client data appears anywhere.</em></p>
+<p><img src="demo/01-marketplace-dashboard.png" alt="Marketplace analytics dashboard: the freshness strip flags one stale source (Marketplace B stock, 52 h old, last collection incomplete) above the supply signal with days to stockout, cover, reorder deficit and shelf-life risk per SKU; labels translated from Russian." loading="lazy"></p>
+<p><em>Marketplace analytics dashboard: the freshness strip flags one stale source (Marketplace B stock, 52 h old, last collection incomplete) above the supply signal with days to stockout, cover, reorder deficit and shelf-life risk per SKU; labels translated from Russian.</em></p>
+<p><img src="demo/02-procurement-gating.png" alt="Procurement plan gating: firm order lines rounded to supplier cartons, lines held back for an unknown carton size, demand blocked as unreliable (suspected self-purchase) and a promo-adjusted line sent to review; labels translated from Russian." loading="lazy"></p>
+<p><em>Procurement plan gating: firm order lines rounded to supplier cartons, lines held back for an unknown carton size, demand blocked as unreliable (suspected self-purchase) and a promo-adjusted line sent to review; labels translated from Russian.</em></p>
+<p><img src="demo/03-green-gate.png" alt="The one-command quality gate (compileall, ruff on two roots, pytest collection, then 4,505 unit tests) finishing green in about four minutes; real output with the long test-id and progress blocks collapsed, verdict labels translated from Russian." loading="lazy"></p>
+<p><em>The one-command quality gate (compileall, ruff on two roots, pytest collection, then 4,505 unit tests) finishing green in about four minutes; real output with the long test-id and progress blocks collapsed, verdict labels translated from Russian.</em></p>
+<h2 id="access">Access</h2>
+<p>The code is private because it runs a live business. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
+<p class="repo"><a href="https://github.com/EAeaza/marketplace-control-tower">This page on GitHub &rarr;</a></p>
+</article>
+</main>
+<footer>Code stays private; these pages describe it. Figures come from the repositories and
+refresh automatically &middot; updated 2026-09-15</footer>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({startOnLoad: true, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict'});
+</script>
+</body></html>

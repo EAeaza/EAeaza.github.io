@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-Invoice Stock Ledger — Azamat Egamberdiev</title>
+<meta name="description" content="Item-level stock ledger and monthly material report rebuilt from e-invoices on top of a 1C opening balance.">
+<link rel="stylesheet" href="../style.css">
+</head><body>
+<header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
+<nav><a href="../#work">Work</a><a href="https://github.com/EAeaza">GitHub</a><a href="mailto:eazamat360@gmail.com">Contact</a></nav></header>
+<main class="project">
+<p class="back"><a href="../">&larr; All work</a></p>
+<article class="doc">
+<h1 id="e-invoice-stock-ledger">E-Invoice Stock Ledger</h1>
+<p>A stock ledger that rebuilds a wholesaler's item-level inventory from its e-invoices and reconciles it with the accounting system.</p>
+<p><strong>since Jul 2026, active · 245 commits · JavaScript (Node.js) · Python · code: private</strong></p>
+<h2 id="the-problem">The problem</h2>
+<p>A food wholesaler in Uzbekistan moved its 1C accounting to a <em>periodic</em> scheme: 1C keeps stock as a single money total, with no quantities per item. The business still needs a monthly material report and a stock figure on any date, per item. It also needs a way to raise outgoing invoices and waybills without retyping every sales document.</p>
+<p>All purchases and sales already pass through the national e-invoicing platform (Didox, ESF invoices), so the item-level truth exists but is scattered. Invoices get corrected or rejected after the fact. Unit and package codes on them are unreliable. Cutting and repacking between purchase and sale never appear in any document. An honest ledger has to live with all of that without inventing data.</p>
+<h2 id="what-it-does">What it does</h2>
+<ul><li><strong>Rebuilds stock on any date</strong> from the e-invoice stream, starting from the 1C opening balance: <em>opening + receipts − issues</em>, each movement dated by the tax-code recognition rule.</li><li><strong>Produces the monthly material report and a stock-on-date statement</strong>, on screen and as Excel print forms. Reports for real periods were produced from it and handed to the client.</li><li><strong>Traces every amount to a source invoice line.</strong> The opening balance must match the 1C trial balance to the smallest currency unit, or the build stops.</li><li><strong>Makes gaps visible:</strong> rejected, duplicate, corrected, unknown-type and missing documents go into named sections and gates instead of disappearing.</li><li><strong>Routes judgment to people.</strong> Operators confirm which spellings are the same product and which unit a line is in, working through shared queues with claim and conflict handling. The machine, sometimes helped by an LLM, only proposes.</li><li><strong>A second tool (the invoice desk)</strong> turns sales waybills into outgoing invoices and waybills in the platform's official upload templates, plus a feed for a 1C loader. The client's staff use it daily.</li></ul>
+<h2 id="how-it-works">How it works</h2>
+<pre class="mermaid">flowchart LR
+  subgraph Sources
+    D[(&quot;E-invoice platform API&quot;)]
+    O[&quot;1C opening balance&lt;br/&gt;trial-balance export&quot;]
+    X[&quot;Sales waybills .xls&quot;]
+  end
+  subgraph Ledger[&quot;Stock ledger :3400&quot;]
+    S[&quot;Sync + frozen corpus&quot;] --&gt; R[&quot;Rules &amp; chains&quot;]
+    R --&gt; G[&quot;Register&quot;]
+    J[&quot;Human decision journal&quot;] --&gt; G
+    O --&gt; G
+    G --&gt; V[&quot;Gates G1-G17&quot;]
+    G --&gt; UI[&quot;Web UI + Excel forms&quot;]
+  end
+  subgraph Desk[&quot;Invoice desk :3300&quot;]
+    X --&gt; M[&quot;Match to 1C cards&quot;]
+    M --&gt; T[&quot;Invoice / waybill templates&quot;]
+    M --&gt; F[&quot;1C loader feed&quot;]
+  end
+  D --&gt; S
+  A[&quot;Signature login helper&quot;] --&gt; D</pre>
+<pre class="mermaid">flowchart TD
+  doc[&quot;Invoice document&quot;] --&gt; gate{&quot;Invoice type?&quot;}
+  gate -- &quot;waybill / other&quot; --&gt; out[&quot;Outside money&lt;br/&gt;(listed)&quot;]
+  gate -- &quot;unknown&quot; --&gt; q[&quot;Quarantine by name&quot;]
+  gate -- &quot;invoice&quot; --&gt; st{&quot;Status &amp; correction chain&quot;}
+  st -- &quot;supplement&quot; --&gt; delta[&quot;Add delta to original&quot;]
+  st -- &quot;correction&quot; --&gt; repl[&quot;Replace, keep parent&#x27;s date&quot;]
+  st -- &quot;rejected / before start&quot; --&gt; excl[&quot;Excluded section&quot;]
+  st -- &quot;valid&quot; --&gt; date[&quot;Recognition date&quot;]
+  delta --&gt; date
+  repl --&gt; date
+  date --&gt; id{&quot;Product identity &amp; unit&lt;br/&gt;decided by a person?&quot;}
+  id -- &quot;no&quot; --&gt; todo[&quot;Needs decision&quot;]
+  id -- &quot;yes&quot; --&gt; row[&quot;Report row = name + product code&quot;]</pre>
+<p>The ledger is a pure function of the current e-invoice snapshot and is recomputed in full every time. Documents change status retroactively, so the data never contains a closed month.</p>
+<h2 id="engineering-notes">Engineering notes</h2>
+<ul><li><strong>Money comes only from invoice lines.</strong> A document-type gate runs before any status logic. It is deliberately placed in two modules. Unknown types or statuses are quarantined by name, never counted as zero.</li><li><strong>Correction chains follow the tax rules.</strong> A supplementary invoice is a delta; a corrected invoice is a full replacement recognised at its parent's date. Six chain invariants include the legal time limits for corrections, used as forward gates.</li><li><strong>No closed months, so the cache has to be exact.</strong> The register's cache key covers every input, including a content fingerprint of the human decision journal. It was introduced after a measured cache collision returned the wrong result.</li><li><strong>The machine proposes, a person records.</strong> Product identity and units cannot be derived from the documents. Decisions live in an append-only journal, each with an author and a timestamp. One product name under two classification codes stays two rows.</li><li><strong>The cost method matches the client's 1C, including negative stock.</strong> The rule was derived from the working 1C's own postings by agents that could not see this code. It was then compared with three open-source ERPs on the same scenarios.</li><li><strong>Production runs only from a commit.</strong> It lives in a separate copy, reports the running commit in its health endpoint, and restarts during a quiet window.</li><li><strong>No dependencies.</strong> The ledger uses only the Node standard library, including its own xlsx reader and writer, so it runs on any machine without Excel.</li></ul>
+<h2 id="how-it-is-verified">How it is verified</h2>
+<ul><li>About 370 test scenarios for the ledger and 52 regressions for the invoice desk, run against an isolated server process.</li><li>A <strong>law registry</strong>: each accounting rule (15 today) needs a test on the final report row with hand-computed numbers, plus a deliberate code mutation that must turn that test red.</li><li>Property tests on 30 seeded random worlds for money conservation.</li><li>17 completeness gates that recompute the report independently, and 12 data-quality checks.</li><li>One acceptance command. Editor hooks refuse to end a work session that touched money-related code without a green run.</li><li>Independent multi-agent audits with a skeptic round, including a 13-axis audit (216 findings, 3 critical, all closed).</li></ul>
+<h2 id="stack">Stack</h2>
+<p>Node.js (stdlib only), vanilla HTML/JS · Python + Playwright + pywinauto (signature login) · PowerShell (deploy, Excel COM) · 1C exports · Didox API · optional OpenAI-compatible LLM · built with Claude Code (hooks, subagents, skills) over 432 agent sessions.</p>
+<h2 id="access">Access</h2>
+<p>The code is private because it runs a live business. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
+<p class="repo"><a href="https://github.com/EAeaza/einvoice-stock-ledger">This page on GitHub &rarr;</a></p>
+</article>
+</main>
+<footer>Code stays private; these pages describe it. Figures come from the repositories and
+refresh automatically &middot; updated 2026-09-15</footer>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({startOnLoad: true, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict'});
+</script>
+</body></html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GrantPulse — Azamat Egamberdiev</title>
+<meta name="description" content="Autonomous editorial pipeline that finds scholarships and grants and publishes verified, source-backed Telegram posts.">
+<link rel="stylesheet" href="../style.css">
+</head><body>
+<header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
+<nav><a href="../#work">Work</a><a href="https://github.com/EAeaza">GitHub</a><a href="mailto:eazamat360@gmail.com">Contact</a></nav></header>
+<main class="project">
+<p class="back"><a href="../">&larr; All work</a></p>
+<article class="doc">
+<h1 id="grantpulse">GrantPulse</h1>
+<p>An editorial pipeline that finds scholarships, grants and internships for young people and publishes checked, source-backed posts to a Telegram channel.</p>
+<p><strong>Jun 2026 – Jul 2026 · 42 commits · Python · SQLite · code: private</strong></p>
+<h2 id="the-problem">The problem</h2>
+<p>There are thousands of opportunities for students — fully funded master's programmes, UN internships, summer schools, fellowships, competitions — and they are scattered across university sites, international organisations and government portals. Russian-speaking students in the CIS and Central Asia mostly learn about them from Telegram channels. Those channels often repost each other, drop the official link, get deadlines wrong, or promise "fully funded" without proof.</p>
+<p>A useful channel has to publish several posts every day, and each post has to be true. Doing that by hand does not scale. Doing it with a naive scraper plus a language model produces confident nonsense.</p>
+<h2 id="what-it-does">What it does</h2>
+<ul><li>Monitors a curated registry of 89 official and aggregator sources. Most are universities, international organisations and government scholarship programmes, and each has a priority and a reliability rating.</li><li>Turns raw pages into structured opportunity records: title, official URL, deadline, country, level, funding, eligibility and summary. It removes duplicates across sources.</li><li>Scores every candidate. Weak candidates go to enrichment, which reads the official page and fills in missing facts, but only with a verbatim quote as evidence.</li><li>Writes each post in Russian, in a fixed house style, using only facts it holds for that record. An independent reviewer model then checks the post against a rubric before anything is approved.</li><li>Schedules posts at human-looking times, deletes its own mistakes within tight limits, and collects views and reactions so later posts improve.</li><li>Gives the operator two control surfaces: a local web console for reviewing cards, and a private Telegram bot with approve, redraft and publish buttons.</li></ul>
+<h2 id="how-it-works">How it works</h2>
+<pre class="mermaid">flowchart TD
+    R[Source registry] --&gt; P[Probe + snapshot]
+    P --&gt; X[Extract]
+    X --&gt; D[Dedup]
+    D --&gt; Q[Quality check]
+    Q --&gt;|weak| E[Evidence enrichment]
+    E --&gt; Q
+    Q --&gt;|ok| W[LLM writer]
+    W --&gt; J[LLM judge]
+    J --&gt;|pass| S[Scheduler]
+    S --&gt; G[Final gates]
+    G --&gt; T[Telegram channel]
+    T --&gt; M[Engagement metrics]
+    M --&gt; L[Learning loop]
+    L --&gt; W</pre>
+<pre class="mermaid">flowchart TD
+    A[Draft from card facts] --&gt; V{Deterministic checks}
+    V --&gt;|fail| F[Fallback / enrich]
+    V --&gt;|ok| J{Judge: rubric + confidence}
+    J --&gt;|pass| AP[Auto-approve]
+    J --&gt;|reject| FX[Fixer repairs listed problems]
+    FX --&gt; J
+    FX --&gt;|3 failed rounds| H[Human queue]
+    J --&gt;|error / unparseable| H</pre>
+<p>Every stage writes its evidence to SQLite: raw items with content hashes, field-level evidence snippets, quality labels, review actions and publication attempts. Any decision can be traced back to the page it came from.</p>
+<h2 id="engineering-notes">Engineering notes</h2>
+<ul><li><strong>Snapshots for auditability.</strong> Every fetched page is stored on disk under a content-hash name and linked from its database row. A listing that later disappears or changes can still be checked against what the system actually saw. Over the project's life this built up several thousand captured pages.</li><li><strong>Two LLM backends behind one interface.</strong> A single client talks to either the official Anthropic SDK or a headless Claude Code CLI, chosen automatically. Both enforce JSON schemas for verdicts, so no model output is parsed with regexes. Every call is logged with its duration and cost.</li><li><strong>The judge is stronger than the writer, and fails closed.</strong> A different, larger model reviews each post. Output it cannot parse counts as a rejection, while transport failures are retried without penalty. If rejections spike, a circuit breaker pauses auto-approval and alerts the operator.</li><li><strong>Data-quality fixes found in production.</strong> Some records had the official URL stored as their title and summary. They now fall back to the page's meta title or a readable URL slug. Deadline suffixes are stripped from titles. A writer that listed unknown fields as "not specified" lines is now blocked at the final send gate, not only at approval.</li><li><strong>Defence in depth on publishing.</strong> Publishing requires two approved states: one for the candidate and one for the post. The checks run again at scheduling and again at send time, including a deadline-expiry check in case a deadline passes while the post sits in the queue.</li><li><strong>One brain, many processes.</strong> A database heartbeat and an explicit dispatch owner stop two machines, or two components, from publishing the same queue. A test that races two threads proves only one of them can claim a due post.</li><li><strong>Found by audit and lint, not by luck.</strong> An adversarial review uncovered approved posts being silently stranded by duplicate draft rows. Enabling a linter exposed an enrichment step that had been failing silently for a week. Both now have regression tests.</li></ul>
+<h2 id="how-it-is-verified">How it is verified</h2>
+<ul><li>29 offline test modules with about 190 test functions. The tests use temporary SQLite databases and swap in stub LLM calls, so they need no network access.</li><li>Lint (ruff) and tests run together as a single <code>make check</code>. It was recorded green at the end of each of the last four development sprints.</li><li>Changes to LLM behaviour were tested live against real candidates before they shipped. For example, three models were compared on the same guardrails before a default was chosen, and enrichment runs were checked for invented facts.</li><li>Destructive actions (publishing, deleting) are dry-run by default and audited. Before any deletion a local backup is written, and there is a per-run cap.</li></ul>
+<h2 id="stack">Stack</h2>
+<p>Python 3.10+, SQLite (WAL mode, versioned migrations), Telegram Bot API, Telethon (engagement metrics), the Anthropic Python SDK and Claude Code CLI, Pillow, pytest, ruff. It runs on macOS under launchd, and a systemd unit is included for a Linux VPS.</p>
+<h2 id="screenshots">Screenshots</h2>
+<p><em>The real code running on synthetic data. No client data appears anywhere.</em></p>
+<p><img src="demo/01-review-inbox-card.png" alt="A candidate card in the GrantPulse review console, rendered by the real code from synthetic data: extracted fields, a deterministic quality score with its labels, field-level evidence snippets taken from the (fictional) official page, and the template-generated Russian draft post beside them." loading="lazy"></p>
+<p><em>A candidate card in the GrantPulse review console, rendered by the real code from synthetic data: extracted fields, a deterministic quality score with its labels, field-level evidence snippets taken from the (fictional) official page, and the template-generated Russian draft post beside them.</em></p>
+<p><img src="demo/02-source-health.png" alt="The console's source health page after a real probe run against fictional sources: blocked, moved, server-error, stale, partial and ok states, each with its failure count and exponential-backoff next-check time." loading="lazy"></p>
+<p><em>The console's source health page after a real probe run against fictional sources: blocked, moved, server-error, stale, partial and ok states, each with its failure count and exponential-backoff next-check time.</em></p>
+<p><img src="demo/03-snapshot-to-post.png" alt="Traceability from snapshot to post: the stored raw feed snapshot with its SHA-256 content hash, the automatic repair of a bare-URL title, and the draft the template writer produced from it. The side-by-side layout is illustrative; the text in each panel is verbatim from the demo database and the snapshot file." loading="lazy"></p>
+<p><em>Traceability from snapshot to post: the stored raw feed snapshot with its SHA-256 content hash, the automatic repair of a bare-URL title, and the draft the template writer produced from it. The side-by-side layout is illustrative; the text in each panel is verbatim from the demo database and the snapshot file.</em></p>
+<h2 id="access">Access</h2>
+<p>The code is private. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
+<p class="repo"><a href="https://github.com/EAeaza/grantpulse-showcase">This page on GitHub &rarr;</a></p>
+</article>
+</main>
+<footer>Code stays private; these pages describe it. Figures come from the repositories and
+refresh automatically &middot; updated 2026-09-15</footer>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({startOnLoad: true, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict'});
+</script>
+</body></html>

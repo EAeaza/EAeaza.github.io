@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Fleet Hub — Azamat Egamberdiev</title>
+<meta name="description" content="Self-syncing git hub that inventories agent-built projects across machines and keeps them under one identity.">
+<link rel="stylesheet" href="../style.css">
+</head><body>
+<header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
+<nav><a href="../#work">Work</a><a href="https://github.com/EAeaza">GitHub</a><a href="mailto:eazamat360@gmail.com">Contact</a></nav></header>
+<main class="project">
+<p class="back"><a href="../">&larr; All work</a></p>
+<article class="doc">
+<h1 id="agent-fleet-hub">Agent Fleet Hub</h1>
+<p>A small, self-running coordination hub for one developer's machines. It inventories every project and coding-agent session on each machine, merges duplicates into one honest list, and keeps everything on GitHub under a single identity.</p>
+<p><strong>since Sep 2026, active · 27 commits · Python · PowerShell · Bash · code: private</strong></p>
+<h2 id="the-problem">The problem</h2>
+<p>I build most of my software with coding agents (Claude Code and Codex), on two Windows PCs and a MacBook. After a year, three things had gone wrong:</p>
+<ul><li><strong>Work drifted into copies</strong>: backup folders, old-PC migrations, downloads and agent worktrees. Nobody could say how many projects there really were.</li><li><strong>Agent sessions were invisible.</strong> Almost 2,000 sessions sat in local transcript folders, and much of that work had no commit history at all.</li><li><strong>Commit identity was split.</strong> Commits had been authored under an address tied to a second, dormant GitHub account, or under machine-generated addresses. Hundreds counted toward the wrong profile, or toward none.</li></ul>
+<h2 id="what-it-does">What it does</h2>
+<ul><li><strong>Inventories each machine</strong>: projects, languages, git history, and Claude Code and Codex sessions bound to the project they ran in. Metadata only, with secrets and long digit runs redacted on the way in.</li><li><strong>Merges across machines.</strong> At the last full merge, 57 raw folder entries became 22 real projects, with every agent session bound to the project it ran in.</li><li><strong>Renders a portfolio page</strong> where every number is computed and every doubtful number carries its caveat.</li><li><strong>Syncs itself.</strong> Each machine refreshes and pushes its own inventory daily, unattended.</li><li><strong>Puts repos under one identity before their first push</strong>, and strips oversized files from history when needed. One repository went from 710 MB to 158 MB.</li><li><strong>Keeps remote access alive</strong> with a watchdog that restarts a hung remote-desktop service.</li></ul>
+<h2 id="how-it-works">How it works</h2>
+<p>Every machine holds a clone of one private git repository. Each machine writes only its own folder, so two machines never touch the same bytes.</p>
+<pre class="mermaid">flowchart LR
+  subgraph Fleet
+    A[&quot;Windows PC A&lt;br/&gt;main agent&lt;br/&gt;09:00&quot;]
+    B[&quot;Windows PC B&lt;br/&gt;09:30&quot;]
+    C[&quot;MacBook&lt;br/&gt;10:00&quot;]
+  end
+  R[(&quot;Private git repo&quot;)]
+  A -- &quot;machines/A/ + shared/&quot; --&gt; R
+  B -- &quot;machines/B/ only&quot; --&gt; R
+  C -- &quot;machines/C/ only&quot; --&gt; R
+  R -- &quot;pull&quot; --&gt; A
+  A --&gt; M[&quot;merge + portfolio&quot;]</pre>
+<p>One scheduled cycle on a peer:</p>
+<pre class="mermaid">flowchart TD
+  L{&quot;lock older&lt;br/&gt;than 90 min?&quot;} --&gt;|&quot;fresh lock&quot;| X[&quot;skip, exit 0&quot;]
+  L --&gt;|&quot;no lock / stale&quot;| P[&quot;pull --rebase --autostash&quot;]
+  P --&gt;|&quot;fails&quot;| AB[&quot;abort rebase, log, exit 0&quot;]
+  P --&gt; CO[&quot;re-collect inventory&quot;]
+  CO --&gt; S[&quot;stage own folder&quot;]
+  S --&gt; Q{&quot;anything staged&lt;br/&gt;outside own folder?&quot;}
+  Q --&gt;|&quot;yes&quot;| RF[&quot;REFUSE: reset, log, exit 0&quot;]
+  Q --&gt;|&quot;no&quot;| CM[&quot;commit&quot;]
+  CM --&gt; PU[&quot;push, up to 3 retries&quot;]
+  PU --&gt; E[&quot;trim log, release lock, exit 0&quot;]</pre>
+<h2 id="engineering-notes">Engineering notes</h2>
+<ul><li><strong>The invariant is enforced in code.</strong> If anything outside the machine's own folder is staged, the sync resets and refuses. It fired on its first real run: it caught another machine's files that were staged for removal.</li><li><strong>Built for a scheduler.</strong> Each run has a lock that goes stale after 90 minutes, a log capped at 500 lines, and an exit code of 0 whatever happens. Runs are staggered so machines never rebase at once. Tasks run only while the user is logged in, by choice: the alternative is storing a password in a scheduled task.</li><li><strong>Merge, group, relate.</strong> Copies of one codebase merge: sessions add up, but file counts take the largest copy and are never summed. Sibling variants group. Projects in the same domain are only cross-linked. Git evidence beats folder names: nine "separate" folders turned out to be runs of one repository.</li><li><strong>Generated output is not counted as code.</strong> One project had 3,507 of 3,655 files as captured HTML, with 148 real source files; the page says so.</li><li><strong>Rewrite with a backup, and verify it.</strong> The re-author tool refuses repos that already have a GitHub remote or linked worktrees. It saves uncommitted work and rewrites a mirror. It then checks four things: the same commit count, the same tip tree, the same per-day commit pattern, and a single author. Only then does it push and move the live branch with a soft reset.</li><li><strong>Fixed in real use.</strong> A laptop whose hostname followed the network appeared as two machines; an alias map folds them back into one. An escaping bug had turned <code>\a</code> in a Windows path into a BEL character. Counting commits over all refs had doubled one repo's history, so commits are now counted from HEAD.</li></ul>
+<h2 id="how-it-is-verified">How it is verified</h2>
+<ul><li>Identity resolution was tested with a real commit: one authored under the old address, which GitHub's API credited to the secondary account.</li><li>The bridge counted as working only after three machines pushed on their own schedule and the main machine pulled all three cleanly.</li><li>Every rewrite prints its checks and GitHub's linked or unlinked count per commit.</li><li>The public profile was re-checked from a logged-out browser.</li></ul>
+<h2 id="stack">Stack</h2>
+<p>Python 3 (standard library), Windows PowerShell 5.1, Bash (3.2-compatible), git, GitHub CLI, git-filter-repo, Windows Task Scheduler, launchd, RustDesk, Claude Code, Codex.</p>
+<h2 id="screenshots">Screenshots</h2>
+<p><em>The real code running on synthetic data. No client data appears anywhere.</em></p>
+<p><img src="demo/01-portfolio.png" alt="The hub's real merge and portfolio scripts rendering a synthetic three-machine fleet: figures header, then a flagship card that folds three copies into one project and keeps generated files out of the source count." loading="lazy"></p>
+<p><em>The hub's real merge and portfolio scripts rendering a synthetic three-machine fleet: figures header, then a flagship card that folds three copies into one project and keeps generated files out of the source count.</em></p>
+<p><img src="demo/02-peer-sync-refused.png" alt="The real peer-sync script in a local sandbox: one normal pull-collect-commit-push cycle, then a refused run because another machine's file was staged." loading="lazy"></p>
+<p><em>The real peer-sync script in a local sandbox: one normal pull-collect-commit-push cycle, then a refused run because another machine's file was staged.</em></p>
+<p><img src="demo/03-merge-fingerprint.png" alt="merge.py output on synthetic data: a Codex scratch folder is recognised as the same repository by its commit fingerprint and folded into ledger-sync." loading="lazy"></p>
+<p><em>merge.py output on synthetic data: a Codex scratch folder is recognised as the same repository by its commit fingerprint and folded into ledger-sync.</em></p>
+<h2 id="access">Access</h2>
+<p>The code is private. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
+<p class="repo"><a href="https://github.com/EAeaza/agent-fleet-hub">This page on GitHub &rarr;</a></p>
+</article>
+</main>
+<footer>Code stays private; these pages describe it. Figures come from the repositories and
+refresh automatically &middot; updated 2026-09-15</footer>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({startOnLoad: true, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict'});
+</script>
+</body></html>

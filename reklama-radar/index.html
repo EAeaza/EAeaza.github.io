@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reklama Radar — Azamat Egamberdiev</title>
+<meta name="description" content="Recognises which adverts ran on a roadside LED screen from a short phone video. CV pipeline + Telegram field app.">
+<link rel="stylesheet" href="../style.css">
+</head><body>
+<header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
+<nav><a href="../#work">Work</a><a href="https://github.com/EAeaza">GitHub</a><a href="mailto:eazamat360@gmail.com">Contact</a></nav></header>
+<main class="project">
+<p class="back"><a href="../">&larr; All work</a></p>
+<article class="doc">
+<h1 id="reklama-radar">Reklama Radar</h1>
+<p>Works out which advertisers ran on a roadside LED screen from a two-minute phone video.</p>
+<p><strong>Aug 2026 · 173 commits · Python · TypeScript · code: private</strong></p>
+<h2 id="the-problem">The problem</h2>
+<p>An outdoor-advertising operator knows what plays on its own LED screens, but not on anyone else's. Its advertisers want exactly that: where competitors are placed, what runs next to them, and how it changes week to week. Today that means sending someone to stand at the screen and write it down.</p>
+<p>Brand accuracy matters more than an exact play count: "shown 4 times instead of 5" is acceptable, but naming a brand that was not on screen is a failure. The original ad videos are not available to match against, so recognition relies on what is visible on the screen, plus a one-time human confirmation.</p>
+<h2 id="what-it-does">What it does</h2>
+<ul><li>A field worker records an assigned screen in a Telegram Mini App for one to two playlist loops. A recording counts only if it was made in the app, near the screen and recently.</li><li>The server finds the panel, straightens it, cuts the video into ad slots, groups repeats and reads on-screen text as naming hints.</li><li>Output per recording: which advertisers appeared, when, with a confirmation frame for each.</li><li>An unfamiliar ad is marked "unknown" rather than guessed. A person names it once, and the catalogue recognises it from then on.</li><li>Reports by screen and by brand, with CSV export.</li></ul>
+<h2 id="how-it-works">How it works</h2>
+<pre class="mermaid">flowchart TD
+    V[Phone video] --&gt; D[Find panel&lt;br/&gt;threshold + fallback net]
+    D --&gt; R[Straighten panel]
+    R --&gt; F[Frame fingerprint]
+    F --&gt; S[Self-similarity&lt;br/&gt;matrix]
+    S --&gt; G[Cut into slots&lt;br/&gt;find loop period]
+    G --&gt; C[Group repeats&lt;br/&gt;at the period]
+    C --&gt; N[Name hints&lt;br/&gt;OCR + catalogue]
+    N --&gt; O[Report&lt;br/&gt;JSON / CSV / HTML]
+    V -. selected frames .-&gt; H[Hi-res crop&lt;br/&gt;for reading] -.-&gt; N</pre>
+<p>In the field, uploads land in an SQLite-backed queue, and a separate worker runs the same pipeline as the command-line tool.</p>
+<p>Research ran on a parallel experiment harness:</p>
+<pre class="mermaid">flowchart TD
+    L[Lead agent] --&gt; A[A: detectors]
+    L --&gt; B[B: preprocessing]
+    L --&gt; C[C: OCR engines]
+    L --&gt; D[D: segmentation]
+    L --&gt; F[F: vision readers]
+    A &amp; B &amp; C &amp; D &amp; F --&gt; K[Reproduce baseline]
+    K --&gt; M[One scorer, one row per config]
+    M --&gt; X{Product metric better?}
+    X -- yes --&gt; P[Merge]
+    X -- no --&gt; J[Reject, keep numbers]</pre>
+<h2 id="engineering-notes">Engineering notes</h2>
+<ul><li><strong>Parallel sweep harness.</strong> Seven agents ran at once, each in its own git worktree, data directory and port. Each branch had to reproduce the baseline exactly, through the production code path, before its results counted. Most results were negative and are recorded: no alternative detector, preprocessing step, OCR engine or embedding beat the baseline.</li><li><strong>Product metric over proxy metric.</strong> One segmentation change raised boundary F1 from 0.72 to 0.81 but made brand names worse against two independent references, so it was rejected.</li><li><strong>Small models where they win.</strong> The frame fingerprint is a blurred 12×7 thumbnail; CLIP, DINOv2 and SigLIP all lost to it on "same picture or not". Panel detection is thresholding, with a trained network only as a fallback. CPU only: a two-minute recording takes about 5–6 s with OCR off.</li><li><strong>Two crops per panel.</strong> Features use a small blurred crop; reading re-crops from source resolution. That added 30.2 points of OCR hook recall, against 3.8 for plain upscaling.</li><li><strong>Grouping by loop period.</strong> Segments are compared only near the playlist period, so similar dark transitions from different advertisers don't merge.</li><li><strong>Robust queue.</strong> Workers claim jobs from an SQLite table with a conditional update. The API never imports the vision stack, and restarting it loses no jobs.</li><li><strong>One contract.</strong> OCR, local and hosted vision models answer the same task cards and are scored by one scorer.</li></ul>
+<h2 id="how-it-is-verified">How it is verified</h2>
+<ul><li><strong>Locked metrics.</strong> A regression test pins each quality metric 2 points below its measured value; a deliberately broken detection threshold was confirmed to trip it.</li><li><strong>Blind hold-out.</strong> Three new screens were labelled from raw frames, and the labels committed before the pipeline ran. Dev-set numbers did not carry over: wrong names rose from 71% to 82%, and the playlist period was found on 0 of 3 recordings, so play counts there are unreliable. Documented, with the cause.</li><li><strong>Acceptance criteria, one command each:</strong></li></ul>
+<div class="table"><table><thead><tr><th>Criterion</th><th>Target</th><th>Measured</th></tr></thead><tbody><tr><td>Brands found (recall)</td><td>≥ 85%</td><td>88.9%</td></tr><tr><td>Named brands correct (precision)</td><td>≥ 90%</td><td>88.9%, borderline</td></tr><tr><td>Processed without human help</td><td>≥ 85%</td><td>10 of 10</td></tr><tr><td>Time per recording</td><td>≤ 5 min</td><td>211 s worst case</td></tr><tr><td>"Unknown" instead of a guess</td><td>holds</td><td>covered by tests</td></tr><tr><td>Catalogue match precision</td><td>≥ 90%</td><td>100%, small sample</td></tr></tbody></table></div>
+<p>Recall and precision use a vision-model naming step on a small set (18 brands). The OCR-only path scores far lower, and run-to-run spread is about 5.6 points.</p>
+<ul><li><strong>Journal checked against history.</strong> A test requires every commit the work journal cites to exist, with a matching title.</li><li><strong>CI:</strong> ruff, pytest, an import check for every evaluation module, and ESLint, type check and build for the Mini App.</li></ul>
+<h2 id="stack">Stack</h2>
+<p>Python 3.11 · OpenCV · NumPy / SciPy · scikit-learn · PyTorch (fallback detector, optional EasyOCR and RapidOCR) · FastAPI · SQLite · React 19 · Vite · TypeScript · Tailwind · Telegram Mini App · Cloudflare tunnel · GitHub Actions. In evaluation only: DINOv2, CLIP, SigLIP, YOLO-World, SAM 2, Tesseract, docTR, local vision models via Ollama, and hosted vision-model APIs.</p>
+<h2 id="access">Access</h2>
+<p>The code is private. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
+<p class="repo"><a href="https://github.com/EAeaza/reklama-radar">This page on GitHub &rarr;</a></p>
+</article>
+</main>
+<footer>Code stays private; these pages describe it. Figures come from the repositories and
+refresh automatically &middot; updated 2026-09-15</footer>
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({startOnLoad: true, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict'});
+</script>
+</body></html>
