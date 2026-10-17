@@ -3,6 +3,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Marketplace Control Tower — Azamat Egamberdiev</title>
 <meta name="description" content="Reconciles marketplace, tax, bank and 1C data on one barcode spine; forecasts demand; answers questions over read-only SQL.">
+<meta name="theme-color" content="#0a0f1c">
+<script>document.documentElement.classList.add('js')</script>
 <meta property="og:type" content="website">
 <meta property="og:title" content="Marketplace Control Tower — Azamat Egamberdiev">
 <meta property="og:description" content="Reconciles marketplace, tax, bank and 1C data on one barcode spine; forecasts demand; answers questions over read-only SQL.">
@@ -10,16 +12,17 @@
 <meta property="og:image" content="https://EAeaza.github.io/control-tower/demo/01-marketplace-dashboard.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="../style.css">
-</head><body>
-<header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
-<nav><a href="../#work">Work</a><a href="https://github.com/EAeaza">GitHub</a><a href="mailto:eazamat360@gmail.com">Contact</a></nav></header>
-<main class="project">
-<p class="back"><a href="../">&larr; All work</a></p>
-<article class="doc">
-<h1 id="marketplace-control-tower">Marketplace Control Tower</h1>
-<p>One system that pulls every source a distributor's business depends on into one database, reconciles the sources against each other, and turns them into decisions its owner can check.</p>
-<p><strong>since Jun 2026, active · 1,637 commits · Python · SQLite · code: private</strong></p>
+</head><body class="project">
+<header class="top"><div class="wrap top-in">
+<a class="brand" href="../"><img class="mark" src="../favicon.png" alt="" width="28" height="28">Azamat Egamberdiev</a>
+<nav><a href="../#work">Work</a><a href="../#lab">Lab</a><a href="../#approach">Approach</a>
+<a class="nav-cta" href="mailto:eazamat360@gmail.com">Contact</a></nav></div></header>
+<main>
+<section class="p-hero"><div class="wrap"><a class="back" href="../#work">&larr; All work</a><p class="eyebrow">Operations</p><h1>Marketplace Control Tower</h1><p class="lede">One system that pulls every source a distributor's business depends on into one database, reconciles the sources against each other, and turns them into decisions its owner can check.</p><div class="facts"><span><b>1,637</b> commits</span><span>since Jun 2026, active</span><span class="chip">Python</span><span class="chip">SQLite</span><span class="lock">code: private</span></div></div><div class="wrap"><figure class="p-shot"><img src="demo/01-marketplace-dashboard.png" alt="Marketplace Control Tower screenshot" loading="eager"></figure></div></section><article class="doc wrap-narrow">
 <h2 id="the-problem">The problem</h2>
 <p>A cosmetics distributor in Uzbekistan sells through three marketplaces, wholesale buyers and retail chains. It keeps its books in 1C, stores goods at a third-party warehouse, and every sale also shows up as a fiscal receipt filed with the tax authority and as a national e-invoice. That makes five or six systems describing the same transaction, and they disagree: documents get mirrored, cancelled and reissued, fees are withheld or invoiced separately, and codes that look like product IDs aren't unique.</p>
 <p>Before this system, reconciling them, forecasting demand and planning imports with long lead times meant spreadsheets and manual cross-checking. A wrong total looked exactly as convincing as a right one.</p>
@@ -67,11 +70,31 @@
 <p><em>The one-command quality gate (compileall, ruff on two roots, pytest collection, then 4,505 unit tests) finishing green in about four minutes; real output with the long test-id and progress blocks collapsed, verdict labels translated from Russian.</em></p>
 <h2 id="access">Access</h2>
 <p>The code is private because it runs a live business. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
-<p class="repo"><a href="https://github.com/EAeaza/marketplace-control-tower">This page on GitHub &rarr;</a></p>
-</article>
+<p class="repo"><a class="btn" href="https://github.com/EAeaza/marketplace-control-tower">Read this page on GitHub &rarr;</a></p>
+</article><nav class="next wrap"><a class="next-card" href="../stock-ledger/"><span class="eyebrow">Next system</span><strong>E-Invoice Stock Ledger</strong><span>Rebuilds a wholesaler&#x27;s item-level stock from its e-invoices on top of a 1C opening balance, traces every amount to a source line, and routes judgment calls to people.</span></a></nav>
 </main>
-<footer>Code stays private; these pages describe it. Figures come from the repositories and
-refresh automatically &middot; updated 2026-10-17</footer>
+<footer><div class="wrap foot-in"><span>&copy; 2026 Azamat Egamberdiev &middot; Tashkent, Uzbekistan</span>
+<span>Code stays private; these pages describe it. Figures refresh from the repositories &middot; updated 2026-10-17</span>
+<span><a href="https://github.com/EAeaza">GitHub</a> &middot; <a href="https://github.com/eaeaza-lab">Lab</a>
+&middot; <a href="mailto:eazamat360@gmail.com">eazamat360@gmail.com</a></span></div></footer>
+<script>
+(() => {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const els = document.querySelectorAll('.reveal');
+  if (still || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); return; }
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('in'); io.unobserve(e.target);
+    e.target.querySelectorAll('[data-count]').forEach(n => {
+      const end = +n.dataset.count, t0 = performance.now(), fmt = new Intl.NumberFormat('en-US');
+      const step = t => { const k = Math.min(1, (t - t0) / 1100), v = Math.round(end * (1 - Math.pow(1 - k, 3)));
+        n.textContent = fmt.format(v); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }), {rootMargin: '0px 0px -8% 0px'});
+  els.forEach(e => io.observe(e));
+})();
+</script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
 const dark = matchMedia('(prefers-color-scheme: dark)').matches;

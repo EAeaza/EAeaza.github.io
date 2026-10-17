@@ -3,6 +3,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GrantPulse — Azamat Egamberdiev</title>
 <meta name="description" content="Autonomous editorial pipeline that finds scholarships and grants and publishes verified, source-backed Telegram posts.">
+<meta name="theme-color" content="#0a0f1c">
+<script>document.documentElement.classList.add('js')</script>
 <meta property="og:type" content="website">
 <meta property="og:title" content="GrantPulse — Azamat Egamberdiev">
 <meta property="og:description" content="Autonomous editorial pipeline that finds scholarships and grants and publishes verified, source-backed Telegram posts.">
@@ -10,16 +12,17 @@
 <meta property="og:image" content="https://EAeaza.github.io/grantpulse/demo/01-review-inbox-card.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="../style.css">
-</head><body>
-<header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
-<nav><a href="../#work">Work</a><a href="https://github.com/EAeaza">GitHub</a><a href="mailto:eazamat360@gmail.com">Contact</a></nav></header>
-<main class="project">
-<p class="back"><a href="../">&larr; All work</a></p>
-<article class="doc">
-<h1 id="grantpulse">GrantPulse</h1>
-<p>An editorial pipeline that finds scholarships, grants and internships for young people and publishes checked, source-backed posts to a Telegram channel.</p>
-<p><strong>since Jun 2026, active · 100 commits · Python · SQLite · code: private</strong></p>
+</head><body class="project">
+<header class="top"><div class="wrap top-in">
+<a class="brand" href="../"><img class="mark" src="../favicon.png" alt="" width="28" height="28">Azamat Egamberdiev</a>
+<nav><a href="../#work">Work</a><a href="../#lab">Lab</a><a href="../#approach">Approach</a>
+<a class="nav-cta" href="mailto:eazamat360@gmail.com">Contact</a></nav></div></header>
+<main>
+<section class="p-hero"><div class="wrap"><a class="back" href="../#work">&larr; All work</a><p class="eyebrow">Editorial automation</p><h1>GrantPulse</h1><p class="lede">An editorial pipeline that finds scholarships, grants and internships for young people and publishes checked, source-backed posts to a Telegram channel.</p><div class="facts"><span><b>100</b> commits</span><span>since Jun 2026, active</span><span class="chip">Python</span><span class="chip">SQLite</span><span class="lock">code: private</span></div></div><div class="wrap"><figure class="p-shot"><img src="demo/01-review-inbox-card.png" alt="GrantPulse screenshot" loading="eager"></figure></div></section><article class="doc wrap-narrow">
 <h2 id="the-problem">The problem</h2>
 <p>There are thousands of opportunities for students — fully funded master's programmes, UN internships, summer schools, fellowships, competitions — and they are scattered across university sites, international organisations and government portals. Russian-speaking students in the CIS and Central Asia mostly learn about them from Telegram channels. Those channels often repost each other, drop the official link, get deadlines wrong, or promise "fully funded" without proof.</p>
 <p>A useful channel has to publish several posts every day, and each post has to be true. Doing that by hand does not scale. Doing it with a naive scraper plus a language model produces confident nonsense.</p>
@@ -67,11 +70,31 @@
 <p><em>Traceability from snapshot to post: the stored raw feed snapshot with its SHA-256 content hash, the automatic repair of a bare-URL title, and the draft the template writer produced from it. The side-by-side layout is illustrative; the text in each panel is verbatim from the demo database and the snapshot file.</em></p>
 <h2 id="access">Access</h2>
 <p>The code is private. To request a walkthrough or read access, open an issue in this repository or email eazamat360@gmail.com.</p>
-<p class="repo"><a href="https://github.com/EAeaza/grantpulse-showcase">This page on GitHub &rarr;</a></p>
-</article>
+<p class="repo"><a class="btn" href="https://github.com/EAeaza/grantpulse-showcase">Read this page on GitHub &rarr;</a></p>
+</article><nav class="next wrap"><a class="next-card" href="../agent-hub/"><span class="eyebrow">Next system</span><strong>Agent Fleet Hub</strong><span>Keeps one developer&#x27;s machines, coding-agent sessions and GitHub identity in sync — unattended, with its safety rules enforced in code.</span></a></nav>
 </main>
-<footer>Code stays private; these pages describe it. Figures come from the repositories and
-refresh automatically &middot; updated 2026-10-17</footer>
+<footer><div class="wrap foot-in"><span>&copy; 2026 Azamat Egamberdiev &middot; Tashkent, Uzbekistan</span>
+<span>Code stays private; these pages describe it. Figures refresh from the repositories &middot; updated 2026-10-17</span>
+<span><a href="https://github.com/EAeaza">GitHub</a> &middot; <a href="https://github.com/eaeaza-lab">Lab</a>
+&middot; <a href="mailto:eazamat360@gmail.com">eazamat360@gmail.com</a></span></div></footer>
+<script>
+(() => {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const els = document.querySelectorAll('.reveal');
+  if (still || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); return; }
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('in'); io.unobserve(e.target);
+    e.target.querySelectorAll('[data-count]').forEach(n => {
+      const end = +n.dataset.count, t0 = performance.now(), fmt = new Intl.NumberFormat('en-US');
+      const step = t => { const k = Math.min(1, (t - t0) / 1100), v = Math.round(end * (1 - Math.pow(1 - k, 3)));
+        n.textContent = fmt.format(v); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }), {rootMargin: '0px 0px -8% 0px'});
+  els.forEach(e => io.observe(e));
+})();
+</script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
 const dark = matchMedia('(prefers-color-scheme: dark)').matches;
