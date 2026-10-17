@@ -3,6 +3,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Agent Fleet Hub — Azamat Egamberdiev</title>
 <meta name="description" content="Self-syncing git hub that inventories agent-built projects across machines and keeps them under one identity.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Agent Fleet Hub — Azamat Egamberdiev">
+<meta property="og:description" content="Self-syncing git hub that inventories agent-built projects across machines and keeps them under one identity.">
+<meta property="og:url" content="https://EAeaza.github.io/agent-hub/">
+<meta property="og:image" content="https://EAeaza.github.io/agent-hub/demo/01-portfolio.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="../favicon.png">
 <link rel="stylesheet" href="../style.css">
 </head><body>
 <header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
@@ -12,10 +19,10 @@
 <article class="doc">
 <h1 id="agent-fleet-hub">Agent Fleet Hub</h1>
 <p>A small, self-running coordination hub for one developer's machines. It inventories every project and coding-agent session on each machine, merges duplicates into one honest list, and keeps everything on GitHub under a single identity.</p>
-<p><strong>since Sep 2026, active · 180 commits · Python · PowerShell · Bash · code: private</strong></p>
+<p><strong>since Sep 2026, active · 188 commits · Python · PowerShell · Bash · code: private</strong></p>
 <h2 id="the-problem">The problem</h2>
-<p>I build most of my software with coding agents (Claude Code and Codex), on two Windows PCs and a MacBook. After a year, three things had gone wrong:</p>
-<ul><li><strong>Work drifted into copies</strong>: backup folders, old-PC migrations, downloads and agent worktrees. Nobody could say how many projects there really were.</li><li><strong>Agent sessions were invisible.</strong> Almost 2,000 sessions sat in local transcript folders, and much of that work had no commit history at all.</li><li><strong>Commit identity was split.</strong> Commits had been authored under an address tied to a second, dormant GitHub account, or under machine-generated addresses. Hundreds counted toward the wrong profile, or toward none.</li></ul>
+<p>I build most of my software with coding agents (Claude Code and Codex), on two Windows PCs and a MacBook. A few months in, three things had gone wrong:</p>
+<ul><li><strong>Work drifted into copies</strong>: backup folders, old-PC migrations, downloads and agent worktrees. Nobody could say how many projects there really were.</li><li><strong>Agent sessions were invisible.</strong> When the hub started, almost 2,000 sessions sat in local transcript folders, and much of that work had no commit history at all.</li><li><strong>Commit identity was split.</strong> Commits had been authored under an address tied to a second, dormant GitHub account, or under machine-generated addresses. Hundreds counted toward the wrong profile, or toward none.</li></ul>
 <h2 id="what-it-does">What it does</h2>
 <ul><li><strong>Inventories each machine</strong>: projects, languages, git history, and Claude Code and Codex sessions bound to the project they ran in. Metadata only, with secrets and long digit runs redacted on the way in.</li><li><strong>Merges across machines.</strong> At the last full merge, 57 raw folder entries became 22 real projects, with every agent session bound to the project it ran in.</li><li><strong>Renders a portfolio page</strong> where every number is computed and every doubtful number carries its caveat.</li><li><strong>Syncs itself.</strong> Each machine refreshes and pushes its own inventory daily, unattended.</li><li><strong>Puts repos under one identity before their first push</strong>, and strips oversized files from history when needed. One repository went from 710 MB to 158 MB.</li><li><strong>Keeps remote access alive</strong> with a watchdog that restarts a hung remote-desktop service.</li></ul>
 <h2 id="how-it-works">How it works</h2>

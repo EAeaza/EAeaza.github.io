@@ -3,6 +3,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>E-Invoice Stock Ledger — Azamat Egamberdiev</title>
 <meta name="description" content="Item-level stock ledger and monthly material report rebuilt from e-invoices on top of a 1C opening balance.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="E-Invoice Stock Ledger — Azamat Egamberdiev">
+<meta property="og:description" content="Item-level stock ledger and monthly material report rebuilt from e-invoices on top of a 1C opening balance.">
+<meta property="og:url" content="https://EAeaza.github.io/stock-ledger/">
+<meta property="og:image" content="https://EAeaza.github.io/stock-ledger/demo/01-material-report-drilldown.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="../favicon.png">
 <link rel="stylesheet" href="../style.css">
 </head><body>
 <header class="top"><a class="brand" href="../">Azamat Egamberdiev</a>
@@ -12,7 +19,7 @@
 <article class="doc">
 <h1 id="e-invoice-stock-ledger">E-Invoice Stock Ledger</h1>
 <p>A stock ledger that rebuilds a wholesaler's item-level inventory from its e-invoices and reconciles it with the accounting system.</p>
-<p><strong>since Jul 2026, active · 252 commits · JavaScript (Node.js) · Python · code: private</strong></p>
+<p><strong>since Jul 2026, active · 254 commits · JavaScript (Node.js) · Python · code: private</strong></p>
 <h2 id="the-problem">The problem</h2>
 <p>A food wholesaler in Uzbekistan moved its 1C accounting to a <em>periodic</em> scheme: 1C keeps stock as a single money total, with no quantities per item. The business still needs a monthly material report and a stock figure on any date, per item. It also needs a way to raise outgoing invoices and waybills without retyping every sales document.</p>
 <p>All purchases and sales already pass through the national e-invoicing platform (Didox, ESF invoices), so the item-level truth exists but is scattered. Invoices get corrected or rejected after the fact. Unit and package codes on them are unreliable. Cutting and repacking between purchase and sale never appear in any document. An honest ledger has to live with all of that without inventing data.</p>
